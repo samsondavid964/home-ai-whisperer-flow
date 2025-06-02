@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -76,44 +75,45 @@ export const EnhancedChatMessage = ({
               {message}
             </p>
           ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              className="text-gray-900 dark:text-gray-100"
-              components={{
-                code({ node, inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={vscDarkPlus}
-                      language={match[1]}
-                      PreTag="div"
-                      className="rounded-lg !mt-4 !mb-4"
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm" {...props}>
+            <div className="text-gray-900 dark:text-gray-100">
+              <ReactMarkdown
+                components={{
+                  code(props) {
+                    const { children, className, ...rest } = props;
+                    const match = /language-(\w+)/.exec(className || '');
+                    return match ? (
+                      <SyntaxHighlighter
+                        style={vscDarkPlus}
+                        language={match[1]}
+                        PreTag="div"
+                        className="rounded-lg !mt-4 !mb-4"
+                        {...rest}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    ) : (
+                      <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm" {...rest}>
+                        {children}
+                      </code>
+                    );
+                  },
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400">
                       {children}
-                    </code>
-                  );
-                },
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400">
-                    {children}
-                  </blockquote>
-                ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-4">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      {children}
-                    </table>
-                  </div>
-                ),
-              }}
-            >
-              {message}
-            </ReactMarkdown>
+                    </blockquote>
+                  ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-4">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                }}
+              >
+                {message}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
         
