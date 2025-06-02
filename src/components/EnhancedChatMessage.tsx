@@ -54,26 +54,34 @@ export const EnhancedChatMessage = ({
     <div className={cn(
       "group flex gap-4 p-6 rounded-2xl mb-4 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4",
       isUser 
-        ? "bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white ml-8 shadow-lg shadow-blue-500/25"
-        : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mr-8 shadow-lg shadow-gray-500/10 dark:shadow-gray-900/20"
+        ? "bg-gray-700 text-white ml-8 shadow-lg"
+        : "bg-gray-200 dark:bg-gray-300 mr-8 shadow-lg text-black"
     )}>
       <div className={cn(
-        "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg",
+        "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden",
         isUser 
-          ? "bg-white/20 backdrop-blur-sm"
-          : "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
+          ? "bg-gray-600"
+          : "bg-gray-100"
       )}>
-        {isUser ? <User size={18} /> : <Bot size={18} />}
+        {isUser ? (
+          <User size={18} className="text-white" />
+        ) : (
+          <img 
+            src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
+            alt="Omolade AI Assistant" 
+            className="w-full h-full object-cover"
+          />
+        )}
       </div>
       
       <div className="flex-1 min-w-0">
-        <div className="prose prose-sm max-w-none dark:prose-invert">
+        <div className="prose prose-sm max-w-none">
           {isUser ? (
             <p className="text-white whitespace-pre-wrap break-words m-0 leading-relaxed">
               {message}
             </p>
           ) : (
-            <div className="text-gray-900 dark:text-gray-100">
+            <div className="text-black">
               <ReactMarkdown
                 components={{
                   code({ node, className, children, ...props }) {
@@ -94,19 +102,19 @@ export const EnhancedChatMessage = ({
                         {String(children).replace(/\n$/, '')}
                       </SyntaxHighlighter>
                     ) : (
-                      <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm" {...props}>
+                      <code className="bg-gray-300 px-1.5 py-0.5 rounded text-sm text-black" {...props}>
                         {children}
                       </code>
                     );
                   },
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400">
+                    <blockquote className="border-l-4 border-gray-500 pl-4 italic my-4 text-gray-700">
                       {children}
                     </blockquote>
                   ),
                   table: ({ children }) => (
                     <div className="overflow-x-auto my-4">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <table className="min-w-full divide-y divide-gray-400">
                         {children}
                       </table>
                     </div>
@@ -122,7 +130,7 @@ export const EnhancedChatMessage = ({
         <div className="flex items-center justify-between mt-4">
           <span className={cn(
             "text-xs",
-            isUser ? "text-white/70" : "text-gray-500 dark:text-gray-400"
+            isUser ? "text-white/70" : "text-gray-600"
           )}>
             {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
@@ -136,7 +144,7 @@ export const EnhancedChatMessage = ({
                 "h-8 w-8 p-0",
                 isUser 
                   ? "text-white/70 hover:text-white hover:bg-white/10" 
-                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-300"
               )}
             >
               <Copy size={14} />
@@ -148,7 +156,7 @@ export const EnhancedChatMessage = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleFeedback('like')}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+                  className="h-8 w-8 p-0 text-gray-500 hover:text-green-600"
                 >
                   <ThumbsUp size={14} />
                 </Button>
@@ -156,7 +164,7 @@ export const EnhancedChatMessage = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleFeedback('dislike')}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                  className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
                 >
                   <ThumbsDown size={14} />
                 </Button>

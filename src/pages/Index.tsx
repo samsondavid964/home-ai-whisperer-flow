@@ -279,7 +279,7 @@ const Index = () => {
   return (
     <ThemeProvider defaultTheme="system" storageKey="ai-chat-theme">
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+        <div className="min-h-screen flex w-full bg-gray-100 dark:bg-gray-900">
           <AppSidebar
             currentSessionId={currentSessionId}
             onNewChat={createNewSession}
@@ -290,19 +290,23 @@ const Index = () => {
           
           <SidebarInset className="flex flex-col">
             {/* Header */}
-            <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4">
+            <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger className="h-8 w-8" />
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                      <Bot className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg">
+                      <img 
+                        src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
+                        alt="Omolade AI Assistant" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div>
-                      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      <h1 className="text-xl font-semibold text-black dark:text-white">
                         {currentSession?.title || 'AI Assistant'}
                       </h1>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Omolade, the Winterfell household Personal Assistant
                       </p>
                     </div>
@@ -320,7 +324,7 @@ const Index = () => {
             </header>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-black">
               {currentMessages.map((message) => (
                 <EnhancedChatMessage
                   key={message.id}
