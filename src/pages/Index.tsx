@@ -104,7 +104,7 @@ const Index = () => {
       messageCount: 1,
       messages: [{
         id: '1',
-        text: "Hello! I'm your private AI assistant. I'm connected to your n8n workflow and ready to help. What would you like to know?",
+        text: "Hey! Omolade here. Send me a message and let's get started.",
         isUser: false,
         timestamp: new Date()
       }]
