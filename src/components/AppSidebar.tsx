@@ -101,49 +101,49 @@ export function AppSidebar({
             <SidebarMenu>
               {filteredSessions.map((session) => (
                 <SidebarMenuItem key={session.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSelectSession(session.id)}
-                    className={cn(
-                      "w-full justify-start group relative",
-                      currentSessionId === session.id && "bg-accent"
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium truncate text-sm">
-                          {session.title}
-                        </span>
+                  <div className={cn(
+                    "w-full p-3 rounded-lg group relative hover:bg-accent transition-colors cursor-pointer",
+                    currentSessionId === session.id && "bg-accent"
+                  )}
+                  onClick={() => onSelectSession(session.id)}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium text-sm truncate">
+                            {session.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {getRelativeTime(session.timestamp)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            • {session.messageCount} messages
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {session.lastMessage}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {getRelativeTime(session.timestamp)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          • {session.messageCount} messages
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate mt-1">
-                        {session.lastMessage}
-                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(session.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 flex-shrink-0"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteSession(session.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </SidebarMenuButton>
+                  </div>
                 </SidebarMenuItem>
               ))}
               {filteredSessions.length === 0 && (
-                <div className="text-center text-muted-foreground text-sm py-4">
+                <div className="text-center text-muted-foreground text-sm py-8">
                   {searchQuery ? 'No chats found' : 'No conversations yet'}
                 </div>
               )}
