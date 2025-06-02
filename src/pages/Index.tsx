@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
@@ -116,8 +117,8 @@ const Index = () => {
         return;
       }
 
-      // Add AI response - look for 'response' field first, then fallback to 'message'
-      const aiResponseText = result.response || result.message || "I received your message but didn't get a response from the AI. Please check your n8n workflow.";
+      // Add AI response - look for 'RESPONSE' field first (uppercase), then other variations
+      const aiResponseText = result.RESPONSE || result.response || result.message || "I received your message but didn't get a response from the AI. Please check your n8n workflow.";
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
