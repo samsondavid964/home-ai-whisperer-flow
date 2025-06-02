@@ -51,18 +51,16 @@ export const EnhancedChatMessage = ({
   };
 
   return (
-    <div 
-      className={cn(
-        "group flex gap-4 p-6 rounded-2xl mb-4 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4",
-        isUser 
-          ? "bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white ml-8 shadow-lg shadow-blue-500/25" 
-          : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mr-8 shadow-lg shadow-gray-500/10 dark:shadow-gray-900/20"
-      )}
-    >
+    <div className={cn(
+      "group flex gap-4 p-6 rounded-2xl mb-4 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4",
+      isUser 
+        ? "bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white ml-8 shadow-lg shadow-blue-500/25"
+        : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mr-8 shadow-lg shadow-gray-500/10 dark:shadow-gray-900/20"
+    )}>
       <div className={cn(
         "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg",
         isUser 
-          ? "bg-white/20 backdrop-blur-sm" 
+          ? "bg-white/20 backdrop-blur-sm"
           : "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
       )}>
         {isUser ? <User size={18} /> : <Bot size={18} />}
@@ -75,45 +73,43 @@ export const EnhancedChatMessage = ({
               {message}
             </p>
           ) : (
-            <div className="text-gray-900 dark:text-gray-100">
-              <ReactMarkdown
-                components={{
-                  code(props) {
-                    const { children, className, ...rest } = props;
-                    const match = /language-(\w+)/.exec(className || '');
-                    return match ? (
-                      <SyntaxHighlighter
-                        style={vscDarkPlus}
-                        language={match[1]}
-                        PreTag="div"
-                        className="rounded-lg !mt-4 !mb-4"
-                        {...rest}
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    ) : (
-                      <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm" {...rest}>
-                        {children}
-                      </code>
-                    );
-                  },
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400">
+            <ReactMarkdown
+              className="text-gray-900 dark:text-gray-100"
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      style={vscDarkPlus as any}
+                      language={match[1]}
+                      PreTag="div"
+                      className="rounded-lg !mt-4 !mb-4"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm" {...props}>
                       {children}
-                    </blockquote>
-                  ),
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-4">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        {children}
-                      </table>
-                    </div>
-                  ),
-                }}
-              >
-                {message}
-              </ReactMarkdown>
-            </div>
+                    </code>
+                  );
+                },
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400">
+                    {children}
+                  </blockquote>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-4">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      {children}
+                    </table>
+                  </div>
+                ),
+              }}
+            >
+              {message}
+            </ReactMarkdown>
           )}
         </div>
         
@@ -131,13 +127,13 @@ export const EnhancedChatMessage = ({
               size="sm"
               onClick={copyToClipboard}
               className={cn(
-                "h-7 w-7 p-0",
+                "h-8 w-8 p-0",
                 isUser 
-                  ? "hover:bg-white/20 text-white/70 hover:text-white" 
-                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "text-white/70 hover:text-white hover:bg-white/10" 
+                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               )}
             >
-              <Copy className="w-3 h-3" />
+              <Copy size={14} />
             </Button>
             
             {!isUser && onFeedback && messageId && (
@@ -146,17 +142,17 @@ export const EnhancedChatMessage = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleFeedback('like')}
-                  className="h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 hover:text-green-600"
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
                 >
-                  <ThumbsUp className="w-3 h-3" />
+                  <ThumbsUp size={14} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleFeedback('dislike')}
-                  className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600"
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                 >
-                  <ThumbsDown className="w-3 h-3" />
+                  <ThumbsDown size={14} />
                 </Button>
               </>
             )}

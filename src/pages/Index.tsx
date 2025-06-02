@@ -303,7 +303,7 @@ const Index = () => {
                         {currentSession?.title || 'AI Assistant'}
                       </h1>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Powered by your n8n workflow
+                        Omolade, the Winterfell household Personal Assistant
                       </p>
                     </div>
                   </div>
