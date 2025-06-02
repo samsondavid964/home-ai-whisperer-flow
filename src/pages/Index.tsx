@@ -107,7 +107,7 @@ const Index = () => {
       }
 
       const result = await response.json();
-      console.log('Response from n8n:', result);
+      console.log('Full response from n8n:', result);
 
       // Check if this is just a workflow start confirmation
       if (result.message === "Workflow was started") {
@@ -117,8 +117,22 @@ const Index = () => {
         return;
       }
 
-      // Add AI response - look for 'RESPONSE' field first (uppercase), then other variations
-      const aiResponseText = result.RESPONSE || result.response || result.message || "I received your message but didn't get a response from the AI. Please check your n8n workflow.";
+      // Look for AI response in various possible fields - prioritize RESPONSE (uppercase)
+      let aiResponseText = '';
+      
+      if (result.RESPONSE) {
+        aiResponseText = result.RESPONSE;
+        console.log('Found AI response in RESPONSE field:', aiResponseText);
+      } else if (result.response) {
+        aiResponseText = result.response;
+        console.log('Found AI response in response field:', aiResponseText);
+      } else if (result.message && result.message !== "Workflow was started") {
+        aiResponseText = result.message;
+        console.log('Found AI response in message field:', aiResponseText);
+      } else {
+        aiResponseText = "I received your message but didn't get a response from the AI. Please check your n8n workflow configuration.";
+        console.log('No AI response found in any expected field. Full result:', result);
+      }
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
