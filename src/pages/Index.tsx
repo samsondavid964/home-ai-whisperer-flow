@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
@@ -109,10 +108,20 @@ const Index = () => {
       const result = await response.json();
       console.log('Response from n8n:', result);
 
-      // Add AI response
+      // Check if this is just a workflow start confirmation
+      if (result.message === "Workflow was started") {
+        console.log('Workflow started, waiting for actual AI response...');
+        // Keep loading state active and wait for the actual response
+        // The actual AI response should come in the 'response' field
+        return;
+      }
+
+      // Add AI response - look for 'response' field first, then fallback to 'message'
+      const aiResponseText = result.response || result.message || "I received your message but didn't get a response from the AI. Please check your n8n workflow.";
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: result.response || result.message || "I received your message but didn't get a response from the AI. Please check your n8n workflow.",
+        text: aiResponseText,
         isUser: false,
         timestamp: new Date()
       };
