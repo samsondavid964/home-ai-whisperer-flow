@@ -1,11 +1,16 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { ChatMessage } from '@/components/ChatMessage';
-import { ChatInput } from '@/components/ChatInput';
+import { EnhancedChatMessage } from '@/components/EnhancedChatMessage';
+import { EnhancedChatInput } from '@/components/EnhancedChatInput';
+import { TypingIndicator } from '@/components/TypingIndicator';
+import { AppSidebar } from '@/components/AppSidebar';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { SettingsModal } from '@/components/SettingsModal';
-import { LoadingDots } from '@/components/LoadingDots';
 import { useToast } from '@/hooks/use-toast';
-import { Bot } from 'lucide-react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { Bot, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Message {
   id: string;
@@ -14,47 +19,115 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: Date;
+  messageCount: number;
+  messages: Message[];
+}
+
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('http://localhost:5678/webhook-test/e52793bb-72ab-461f-8f46-404df08e6cc9');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load webhook URL from localStorage on component mount
+  // Load data from localStorage
   useEffect(() => {
+    const savedSessions = localStorage.getItem('chat-sessions');
+    const savedCurrentSession = localStorage.getItem('current-session-id');
     const savedWebhookUrl = localStorage.getItem('n8n-webhook-url');
+    
     if (savedWebhookUrl) {
       setWebhookUrl(savedWebhookUrl);
     } else {
-      // Save the default webhook URL to localStorage
-      localStorage.setItem('n8n-webhook-url', 'http://localhost:5678/webhook-test/e52793bb-72ab-461f-8f46-404df08e6cc9');
+      localStorage.setItem('n8n-webhook-url', webhookUrl);
+    }
+
+    if (savedSessions) {
+      const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
+        ...session,
+        timestamp: new Date(session.timestamp),
+        messages: session.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      }));
+      setSessions(parsedSessions);
+      
+      if (savedCurrentSession && parsedSessions.find((s: ChatSession) => s.id === savedCurrentSession)) {
+        setCurrentSessionId(savedCurrentSession);
+      } else if (parsedSessions.length > 0) {
+        setCurrentSessionId(parsedSessions[0].id);
+      } else {
+        createNewSession();
+      }
+    } else {
+      createNewSession();
     }
   }, []);
 
-  // Save webhook URL to localStorage whenever it changes
+  // Save to localStorage whenever sessions change
+  useEffect(() => {
+    if (sessions.length > 0) {
+      localStorage.setItem('chat-sessions', JSON.stringify(sessions));
+    }
+  }, [sessions]);
+
+  useEffect(() => {
+    if (currentSessionId) {
+      localStorage.setItem('current-session-id', currentSessionId);
+    }
+  }, [currentSessionId]);
+
   useEffect(() => {
     if (webhookUrl) {
       localStorage.setItem('n8n-webhook-url', webhookUrl);
     }
   }, [webhookUrl]);
 
-  // Auto-scroll to bottom when new messages are added
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [sessions, currentSessionId, isLoading]);
 
-  // Add welcome message on first load
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
+  const createNewSession = () => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: 'New Conversation',
+      lastMessage: '',
+      timestamp: new Date(),
+      messageCount: 1,
+      messages: [{
         id: '1',
         text: "Hello! I'm your private AI assistant. I'm connected to your n8n workflow and ready to help. What would you like to know?",
         isUser: false,
         timestamp: new Date()
-      }]);
-    }
-  }, []);
+      }]
+    };
+    
+    setSessions(prev => [newSession, ...prev]);
+    setCurrentSessionId(newSession.id);
+  };
+
+  const getCurrentSession = () => {
+    return sessions.find(session => session.id === currentSessionId);
+  };
+
+  const updateCurrentSession = (updater: (session: ChatSession) => ChatSession) => {
+    setSessions(prev => prev.map(session => 
+      session.id === currentSessionId ? updater(session) : session
+    ));
+  };
+
+  const generateSessionTitle = (firstMessage: string) => {
+    const words = firstMessage.split(' ').slice(0, 6);
+    return words.join(' ') + (firstMessage.split(' ').length > 6 ? '...' : '');
+  };
 
   const sendMessage = async (text: string) => {
     if (!webhookUrl) {
@@ -66,7 +139,6 @@ const Index = () => {
       return;
     }
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -74,7 +146,18 @@ const Index = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    updateCurrentSession(session => {
+      const isFirstUserMessage = session.messages.filter(m => m.isUser).length === 0;
+      return {
+        ...session,
+        title: isFirstUserMessage ? generateSessionTitle(text) : session.title,
+        lastMessage: text,
+        timestamp: new Date(),
+        messageCount: session.messageCount + 1,
+        messages: [...session.messages, userMessage]
+      };
+    });
+
     setIsLoading(true);
 
     try {
@@ -98,7 +181,6 @@ const Index = () => {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -109,15 +191,11 @@ const Index = () => {
       const result = await response.json();
       console.log('Full response from n8n:', result);
 
-      // Check if this is just a workflow start confirmation
       if (result.message === "Workflow was started") {
         console.log('Workflow started, waiting for actual AI response...');
-        // Keep loading state active and wait for the actual response
-        // The actual AI response should come in the 'response' field
         return;
       }
 
-      // Look for AI response in various possible fields - prioritize RESPONSE (uppercase)
       let aiResponseText = '';
       
       if (result.RESPONSE) {
@@ -141,7 +219,13 @@ const Index = () => {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      updateCurrentSession(session => ({
+        ...session,
+        lastMessage: aiResponseText.slice(0, 100),
+        timestamp: new Date(),
+        messageCount: session.messageCount + 1,
+        messages: [...session.messages, aiMessage]
+      }));
       
     } catch (error) {
       console.error('Error sending message to n8n:', error);
@@ -153,7 +237,13 @@ const Index = () => {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      updateCurrentSession(session => ({
+        ...session,
+        lastMessage: "Connection failed",
+        timestamp: new Date(),
+        messageCount: session.messageCount + 1,
+        messages: [...session.messages, errorMessage]
+      }));
       
       toast({
         title: "Connection error",
@@ -165,76 +255,97 @@ const Index = () => {
     }
   };
 
-  const clearChat = () => {
-    setMessages([{
-      id: '1',
-      text: "Chat cleared! How can I help you today?",
-      isUser: false,
-      timestamp: new Date()
-    }]);
+  const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
+    console.log(`Feedback for message ${messageId}: ${type}`);
   };
 
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions(prev => {
+      const filtered = prev.filter(session => session.id !== sessionId);
+      if (sessionId === currentSessionId) {
+        if (filtered.length > 0) {
+          setCurrentSessionId(filtered[0].id);
+        } else {
+          createNewSession();
+        }
+      }
+      return filtered;
+    });
+  };
+
+  const currentSession = getCurrentSession();
+  const currentMessages = currentSession?.messages || [];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Private AI Assistant</h1>
-              <p className="text-sm text-gray-500">Powered by your local AI setup</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={clearChat}
-              className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-md hover:bg-gray-100"
-            >
-              Clear Chat
-            </button>
-          </div>
-        </div>
-      </div>
+    <ThemeProvider defaultTheme="system" storageKey="ai-chat-theme">
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+          <AppSidebar
+            currentSessionId={currentSessionId}
+            onNewChat={createNewSession}
+            onSelectSession={setCurrentSessionId}
+            onDeleteSession={handleDeleteSession}
+            sessions={sessions}
+          />
+          
+          <SidebarInset className="flex flex-col">
+            {/* Header */}
+            <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <SidebarTrigger className="h-8 w-8" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {currentSession?.title || 'AI Assistant'}
+                      </h1>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Powered by your n8n workflow
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <SettingsModal 
+                    webhookUrl={webhookUrl} 
+                    onWebhookUrlChange={setWebhookUrl} 
+                  />
+                </div>
+              </div>
+            </header>
 
-      {/* Settings Button */}
-      <SettingsModal 
-        webhookUrl={webhookUrl} 
-        onWebhookUrlChange={setWebhookUrl} 
-      />
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {currentMessages.map((message) => (
+                <EnhancedChatMessage
+                  key={message.id}
+                  message={message.text}
+                  isUser={message.isUser}
+                  timestamp={message.timestamp}
+                  messageId={message.id}
+                  onFeedback={handleFeedback}
+                />
+              ))}
+              
+              {isLoading && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </div>
 
-      {/* Chat Container */}
-      <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message.text}
-              isUser={message.isUser}
-              timestamp={message.timestamp}
+            {/* Input */}
+            <EnhancedChatInput
+              onSendMessage={sendMessage}
+              isLoading={isLoading}
+              disabled={!webhookUrl}
             />
-          ))}
-          
-          {isLoading && (
-            <div className="bg-white border border-gray-200 mr-12 rounded-lg shadow-sm">
-              <LoadingDots />
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+          </SidebarInset>
         </div>
-
-        {/* Input */}
-        <ChatInput
-          onSendMessage={sendMessage}
-          isLoading={isLoading}
-          disabled={!webhookUrl}
-        />
-      </div>
-    </div>
+      </SidebarProvider>
+    </ThemeProvider>
   );
 };
 
