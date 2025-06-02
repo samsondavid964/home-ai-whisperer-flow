@@ -17,7 +17,7 @@ interface Message {
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('http://localhost:5678/webhook-test/e52793bb-72ab-461f-8f46-404df08e6cc9');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -26,6 +26,9 @@ const Index = () => {
     const savedWebhookUrl = localStorage.getItem('n8n-webhook-url');
     if (savedWebhookUrl) {
       setWebhookUrl(savedWebhookUrl);
+    } else {
+      // Save the default webhook URL to localStorage
+      localStorage.setItem('n8n-webhook-url', 'http://localhost:5678/webhook-test/e52793bb-72ab-461f-8f46-404df08e6cc9');
     }
   }, []);
 
@@ -76,6 +79,11 @@ const Index = () => {
 
     try {
       console.log('Sending message to n8n webhook:', webhookUrl);
+      console.log('Request payload:', {
+        message: text,
+        timestamp: new Date().toISOString(),
+        user_id: 'household_user'
+      });
       
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -89,8 +97,13 @@ const Index = () => {
         }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.log('Error response body:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
@@ -111,7 +124,7 @@ const Index = () => {
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Sorry, I couldn't process your request. Please check your n8n webhook configuration and make sure your workflow is active.",
+        text: `Connection failed: ${error.message}. Please check that your n8n workflow is running and the webhook is configured for POST requests.`,
         isUser: false,
         timestamp: new Date()
       };
@@ -120,7 +133,7 @@ const Index = () => {
       
       toast({
         title: "Connection error",
-        description: "Failed to connect to your n8n workflow. Please check the webhook URL and try again.",
+        description: "Failed to connect to your n8n workflow. Check the console for details.",
         variant: "destructive",
       });
     } finally {
