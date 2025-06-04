@@ -1,171 +1,119 @@
+import React, { useState } from 'react';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { Plus, MessageSquare, Settings, Trash2 } from 'lucide-react';
+import UserMenu from '@/components/UserMenu';
 
-import { useState, useEffect } from 'react';
-import { MessageSquare, Plus, Search, Settings, Trash2, Clock } from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-
-interface ChatSession {
+interface Chat {
   id: string;
   title: string;
   lastMessage: string;
-  timestamp: Date;
-  messageCount: number;
+  timestamp: string;
 }
 
 interface AppSidebarProps {
-  currentSessionId: string;
   onNewChat: () => void;
-  onSelectSession: (sessionId: string) => void;
-  onDeleteSession: (sessionId: string) => void;
-  sessions: ChatSession[];
+  onChatSelect?: (chatId: string) => void;
+  currentChatId?: string;
 }
 
-export function AppSidebar({
-  currentSessionId,
-  onNewChat,
-  onSelectSession,
-  onDeleteSession,
-  sessions,
-}: AppSidebarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+const AppSidebar: React.FC<AppSidebarProps> = ({ onNewChat, onChatSelect, currentChatId }) => {
+  const [recentChats] = useState<Chat[]>([
+    {
+      id: '1',
+      title: 'Chat about React',
+      lastMessage: 'How do I use hooks?',
+      timestamp: '2 hours ago'
+    },
+    {
+      id: '2',
+      title: 'JavaScript Questions',
+      lastMessage: 'What is async/await?',
+      timestamp: '1 day ago'
+    },
+    {
+      id: '3',
+      title: 'CSS Help',
+      lastMessage: 'Flexbox vs Grid?',
+      timestamp: '3 days ago'
+    }
+  ]);
 
-  const filteredSessions = sessions.filter(session =>
-    session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    session.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleChatClick = (chatId: string) => {
+    onChatSelect?.(chatId);
+  };
 
-  const getRelativeTime = (timestamp: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return timestamp.toLocaleDateString();
+  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    console.log('Delete chat:', chatId);
   };
 
   return (
-    <Sidebar className="border-r border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-      <SidebarHeader className="border-b border-gray-300 dark:border-gray-700 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg overflow-hidden">
-            <img 
-              src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
-              alt="AI Assistant" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <span className="font-semibold text-black dark:text-white">AI Assistant</span>
+    <Sidebar className="bg-gray-950 border-r border-gray-800">
+      <SidebarHeader className="p-4 border-b border-gray-800">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-white">Chat AI</h1>
+          <UserMenu />
         </div>
-        <Button 
+        <button
           onClick={onNewChat}
-          className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
+          className="w-full mt-3 flex items-center gap-2 px-3 py-2 text-sm text-gray-300 bg-gray-900 hover:bg-gray-800 rounded-lg border border-gray-700 transition-colors"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           New Chat
-        </Button>
+        </button>
       </SidebarHeader>
       
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-700 dark:text-gray-300">Search Chats</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-700 dark:text-gray-300">Recent Chats</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredSessions.map((session) => (
-                <SidebarMenuItem key={session.id}>
-                  <div className={cn(
-                    "w-full p-3 rounded-lg group relative hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer",
-                    currentSessionId === session.id && "bg-gray-200 dark:bg-gray-700"
-                  )}
-                  onClick={() => onSelectSession(session.id)}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <MessageSquare className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
-                          <span className="font-medium text-sm truncate text-black dark:text-white">
-                            {session.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {getRelativeTime(session.timestamp)}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            • {session.messageCount} messages
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                          {session.lastMessage}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteSession(session.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 flex-shrink-0 hover:bg-gray-300 dark:hover:bg-gray-600"
-                      >
-                        <Trash2 className="w-3 h-3 text-gray-600 dark:text-gray-400" />
-                      </Button>
-                    </div>
+      <SidebarContent className="p-4">
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-gray-400 mb-3">Recent Chats</h2>
+          <SidebarMenu>
+            {recentChats.map((chat) => (
+              <SidebarMenuItem key={chat.id}>
+                <SidebarMenuButton
+                  onClick={() => handleChatClick(chat.id)}
+                  className={`w-full group relative flex flex-col items-start p-3 rounded-lg transition-colors hover:bg-gray-800 ${
+                    currentChatId === chat.id ? 'bg-gray-800' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-white font-medium truncate flex-1">
+                      {chat.title}
+                    </span>
+                    <button
+                      onClick={(e) => handleDeleteChat(e, chat.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all flex-shrink-0"
+                    >
+                      <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-400" />
+                    </button>
                   </div>
-                </SidebarMenuItem>
-              ))}
-              {filteredSessions.length === 0 && (
-                <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-8">
-                  {searchQuery ? 'No chats found' : 'No conversations yet'}
-                </div>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  <div className="w-full mt-1 pl-6">
+                    <p className="text-xs text-gray-500 truncate">
+                      {chat.lastMessage}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {chat.timestamp}
+                    </p>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </div>
+        
+        <div className="mt-8 pt-4 border-t border-gray-800">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton className="w-full flex items-center gap-2 p-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors">
+                <Settings className="w-4 h-4" />
+                <span className="text-sm">Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-gray-300 dark:border-gray-700 p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton className="text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
-}
+};
+
+export default AppSidebar;
