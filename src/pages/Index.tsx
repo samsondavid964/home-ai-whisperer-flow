@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { EnhancedChatMessage } from '@/components/EnhancedChatMessage';
 import { EnhancedChatInput } from '@/components/EnhancedChatInput';
@@ -315,7 +314,7 @@ const Index = () => {
   return (
     <ThemeProvider defaultTheme="system" storageKey="ai-chat-theme">
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gray-100 dark:bg-gray-900">
+        <div className="min-h-screen flex w-full bg-gradient-to-br from-gray-100 via-white to-gray-50 dark:from-gray-900 dark:via-black dark:to-gray-800">
           <AppSidebar
             currentSessionId={currentSessionId}
             onNewChat={handleStartChat}
@@ -328,10 +327,10 @@ const Index = () => {
             {showWelcome ? (
               <>
                 {/* Welcome Header */}
-                <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4">
+                <header className="bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-300/50 dark:border-gray-700/50 p-4 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <SidebarTrigger className="h-8 w-8" />
+                      <SidebarTrigger className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200" />
                       <h1 className="text-xl font-semibold text-black dark:text-white">
                         AI Assistant
                       </h1>
@@ -353,17 +352,18 @@ const Index = () => {
             ) : (
               <>
                 {/* Chat Header */}
-                <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4 animate-fade-in">
+                <header className="bg-white/90 dark:bg-black/90 backdrop-blur-xl border-b border-gray-300/50 dark:border-gray-700/50 p-4 animate-fade-in transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <SidebarTrigger className="h-8 w-8" />
+                      <SidebarTrigger className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200" />
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg">
+                        <div className="relative w-12 h-12 rounded-2xl overflow-hidden shadow-lg ring-2 ring-gray-200 dark:ring-gray-700 hover:scale-105 transition-transform duration-200">
                           <img 
                             src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
                             alt="Omolade AI Assistant" 
                             className="w-full h-full object-cover"
                           />
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-black animate-pulse"></div>
                         </div>
                         <div>
                           <h1 className="text-xl font-semibold text-black dark:text-white">
@@ -387,19 +387,28 @@ const Index = () => {
                 </header>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-black animate-fade-in">
-                  {currentMessages.map((message) => (
-                    <EnhancedChatMessage
+                <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-gradient-to-b from-transparent via-gray-50/30 to-transparent dark:via-gray-900/30 animate-fade-in">
+                  {currentMessages.map((message, index) => (
+                    <div
                       key={message.id}
-                      message={message.text}
-                      isUser={message.isUser}
-                      timestamp={message.timestamp}
-                      messageId={message.id}
-                      onFeedback={handleFeedback}
-                    />
+                      className="animate-in slide-in-from-bottom-4 duration-500"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <EnhancedChatMessage
+                        message={message.text}
+                        isUser={message.isUser}
+                        timestamp={message.timestamp}
+                        messageId={message.id}
+                        onFeedback={handleFeedback}
+                      />
+                    </div>
                   ))}
                   
-                  {isLoading && <TypingIndicator />}
+                  {isLoading && (
+                    <div className="animate-in fade-in duration-300">
+                      <TypingIndicator />
+                    </div>
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
 
