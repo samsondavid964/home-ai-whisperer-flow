@@ -1,50 +1,54 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Plus, MessageSquare, Settings, Trash2 } from 'lucide-react';
 import UserMenu from '@/components/UserMenu';
 
-interface Chat {
+interface ChatSession {
   id: string;
   title: string;
   lastMessage: string;
-  timestamp: string;
+  timestamp: Date;
+  messageCount: number;
+  messages: any[];
 }
 
 interface AppSidebarProps {
+  currentSessionId: string;
   onNewChat: () => void;
-  onChatSelect?: (chatId: string) => void;
-  currentChatId?: string;
+  onSelectSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
+  sessions: ChatSession[];
 }
 
-const AppSidebar: React.FC<AppSidebarProps> = ({ onNewChat, onChatSelect, currentChatId }) => {
-  const [recentChats] = useState<Chat[]>([
-    {
-      id: '1',
-      title: 'Chat about React',
-      lastMessage: 'How do I use hooks?',
-      timestamp: '2 hours ago'
-    },
-    {
-      id: '2',
-      title: 'JavaScript Questions',
-      lastMessage: 'What is async/await?',
-      timestamp: '1 day ago'
-    },
-    {
-      id: '3',
-      title: 'CSS Help',
-      lastMessage: 'Flexbox vs Grid?',
-      timestamp: '3 days ago'
-    }
-  ]);
-
-  const handleChatClick = (chatId: string) => {
-    onChatSelect?.(chatId);
+const AppSidebar: React.FC<AppSidebarProps> = ({ 
+  currentSessionId, 
+  onNewChat, 
+  onSelectSession, 
+  onDeleteSession, 
+  sessions 
+}) => {
+  const handleChatClick = (sessionId: string) => {
+    onSelectSession(sessionId);
   };
 
-  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+  const handleDeleteChat = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    console.log('Delete chat:', chatId);
+    onDeleteSession(sessionId);
+  };
+
+  const formatTimestamp = (timestamp: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    }
   };
 
   return (
@@ -67,37 +71,43 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ onNewChat, onChatSelect, curren
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-gray-400 mb-3">Recent Chats</h2>
           <SidebarMenu>
-            {recentChats.map((chat) => (
-              <SidebarMenuItem key={chat.id}>
-                <SidebarMenuButton
-                  onClick={() => handleChatClick(chat.id)}
-                  className={`w-full group relative flex flex-col items-start p-3 rounded-lg transition-colors hover:bg-gray-800 ${
-                    currentChatId === chat.id ? 'bg-gray-800' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm text-white font-medium truncate flex-1">
-                      {chat.title}
-                    </span>
-                    <button
-                      onClick={(e) => handleDeleteChat(e, chat.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all flex-shrink-0"
-                    >
-                      <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-400" />
-                    </button>
-                  </div>
-                  <div className="w-full mt-1 pl-6">
-                    <p className="text-xs text-gray-500 truncate">
-                      {chat.lastMessage}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {chat.timestamp}
-                    </p>
-                  </div>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {sessions.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">
+                No conversations yet
+              </div>
+            ) : (
+              sessions.map((session) => (
+                <SidebarMenuItem key={session.id}>
+                  <SidebarMenuButton
+                    onClick={() => handleChatClick(session.id)}
+                    className={`w-full group relative flex flex-col items-start p-3 rounded-lg transition-colors hover:bg-gray-800 ${
+                      currentSessionId === session.id ? 'bg-gray-800' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm text-white font-medium truncate flex-1">
+                        {session.title}
+                      </span>
+                      <button
+                        onClick={(e) => handleDeleteChat(e, session.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all flex-shrink-0"
+                      >
+                        <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-400" />
+                      </button>
+                    </div>
+                    <div className="w-full mt-1 pl-6">
+                      <p className="text-xs text-gray-500 truncate">
+                        {session.lastMessage || 'No messages yet'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {formatTimestamp(session.timestamp)}
+                      </p>
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            )}
           </SidebarMenu>
         </div>
         
