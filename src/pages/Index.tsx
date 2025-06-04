@@ -4,6 +4,7 @@ import { EnhancedChatMessage } from '@/components/EnhancedChatMessage';
 import { EnhancedChatInput } from '@/components/EnhancedChatInput';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import AppSidebar from '@/components/AppSidebar';
+import WelcomePage from '@/components/WelcomePage';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { SettingsModal } from '@/components/SettingsModal';
@@ -32,6 +33,7 @@ const Index = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState('http://192.168.101.3:5678/webhook/e52793bb-72ab-461f-8f46-404df08e6cc9');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -61,13 +63,11 @@ const Index = () => {
       
       if (savedCurrentSession && parsedSessions.find((s: ChatSession) => s.id === savedCurrentSession)) {
         setCurrentSessionId(savedCurrentSession);
+        setShowWelcome(false);
       } else if (parsedSessions.length > 0) {
-        setCurrentSessionId(parsedSessions[0].id);
-      } else {
-        createNewSession();
+        // Don't auto-select a session, stay on welcome page
+        setShowWelcome(true);
       }
-    } else {
-      createNewSession();
     }
   }, []);
 
@@ -95,7 +95,7 @@ const Index = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [sessions, currentSessionId, isLoading]);
 
-  const createNewSession = () => {
+  const createNewSession = (startWithMessage?: string) => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
       title: 'New Conversation',
@@ -112,6 +112,20 @@ const Index = () => {
     
     setSessions(prev => [newSession, ...prev]);
     setCurrentSessionId(newSession.id);
+    setShowWelcome(false);
+
+    // If starting with a message, send it immediately
+    if (startWithMessage) {
+      setTimeout(() => {
+        sendMessage(startWithMessage);
+      }, 500);
+    }
+
+    return newSession.id;
+  };
+
+  const handleStartChat = () => {
+    createNewSession();
   };
 
   const getCurrentSession = () => {
@@ -136,6 +150,19 @@ const Index = () => {
         description: "Please configure your n8n webhook URL in settings first.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // If we're on welcome page, create a new session first
+    if (showWelcome || !currentSessionId) {
+      const newSessionId = createNewSession();
+      setCurrentSessionId(newSessionId);
+      setShowWelcome(false);
+      
+      // Wait for state to update before sending message
+      setTimeout(() => {
+        sendMessage(text);
+      }, 100);
       return;
     }
 
@@ -265,13 +292,21 @@ const Index = () => {
       const filtered = prev.filter(session => session.id !== sessionId);
       if (sessionId === currentSessionId) {
         if (filtered.length > 0) {
-          setCurrentSessionId(filtered[0].id);
+          // Don't auto-select another session, go to welcome page
+          setCurrentSessionId('');
+          setShowWelcome(true);
         } else {
-          createNewSession();
+          setCurrentSessionId('');
+          setShowWelcome(true);
         }
       }
       return filtered;
     });
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+    setShowWelcome(false);
   };
 
   const currentSession = getCurrentSession();
@@ -283,70 +318,99 @@ const Index = () => {
         <div className="min-h-screen flex w-full bg-gray-100 dark:bg-gray-900">
           <AppSidebar
             currentSessionId={currentSessionId}
-            onNewChat={createNewSession}
-            onSelectSession={setCurrentSessionId}
+            onNewChat={handleStartChat}
+            onSelectSession={handleSelectSession}
             onDeleteSession={handleDeleteSession}
             sessions={sessions}
           />
           
           <SidebarInset className="flex flex-col">
-            {/* Header */}
-            <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <SidebarTrigger className="h-8 w-8" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg">
-                      <img 
-                        src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
-                        alt="Omolade AI Assistant" 
-                        className="w-full h-full object-cover"
+            {showWelcome ? (
+              <>
+                {/* Welcome Header */}
+                <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <SidebarTrigger className="h-8 w-8" />
+                      <h1 className="text-xl font-semibold text-black dark:text-white">
+                        AI Assistant
+                      </h1>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <ThemeToggle />
+                      <SettingsModal 
+                        webhookUrl={webhookUrl} 
+                        onWebhookUrlChange={setWebhookUrl} 
                       />
                     </div>
-                    <div>
-                      <h1 className="text-xl font-semibold text-black dark:text-white">
-                        {currentSession?.title || 'AI Assistant'}
-                      </h1>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Omolade, the Winterfell household Personal Assistant
-                      </p>
+                  </div>
+                </header>
+
+                {/* Welcome Page */}
+                <WelcomePage onStartChat={handleStartChat} />
+              </>
+            ) : (
+              <>
+                {/* Chat Header */}
+                <header className="bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 p-4 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <SidebarTrigger className="h-8 w-8" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg">
+                          <img 
+                            src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
+                            alt="Omolade AI Assistant" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h1 className="text-xl font-semibold text-black dark:text-white">
+                            {currentSession?.title || 'AI Assistant'}
+                          </h1>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Omolade, the Winterfell household Personal Assistant
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <ThemeToggle />
+                      <SettingsModal 
+                        webhookUrl={webhookUrl} 
+                        onWebhookUrlChange={setWebhookUrl} 
+                      />
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <ThemeToggle />
-                  <SettingsModal 
-                    webhookUrl={webhookUrl} 
-                    onWebhookUrlChange={setWebhookUrl} 
-                  />
-                </div>
-              </div>
-            </header>
+                </header>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-black">
-              {currentMessages.map((message) => (
-                <EnhancedChatMessage
-                  key={message.id}
-                  message={message.text}
-                  isUser={message.isUser}
-                  timestamp={message.timestamp}
-                  messageId={message.id}
-                  onFeedback={handleFeedback}
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-black animate-fade-in">
+                  {currentMessages.map((message) => (
+                    <EnhancedChatMessage
+                      key={message.id}
+                      message={message.text}
+                      isUser={message.isUser}
+                      timestamp={message.timestamp}
+                      messageId={message.id}
+                      onFeedback={handleFeedback}
+                    />
+                  ))}
+                  
+                  {isLoading && <TypingIndicator />}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input */}
+                <EnhancedChatInput
+                  onSendMessage={sendMessage}
+                  isLoading={isLoading}
+                  disabled={!webhookUrl}
                 />
-              ))}
-              
-              {isLoading && <TypingIndicator />}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <EnhancedChatInput
-              onSendMessage={sendMessage}
-              isLoading={isLoading}
-              disabled={!webhookUrl}
-            />
+              </>
+            )}
           </SidebarInset>
         </div>
       </SidebarProvider>
