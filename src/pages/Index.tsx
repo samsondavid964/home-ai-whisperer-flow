@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { EnhancedChatMessage } from '@/components/EnhancedChatMessage';
 import { EnhancedChatInput } from '@/components/EnhancedChatInput';
 import { TypingIndicator } from '@/components/TypingIndicator';
-import { AppSidebar } from '@/components/AppSidebar';
+import AppSidebar from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { SettingsModal } from '@/components/SettingsModal';
