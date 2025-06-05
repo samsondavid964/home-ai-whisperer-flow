@@ -1,33 +1,37 @@
-
 import React from 'react';
 import { Bot, Plus, MessageSquare, Lightbulb, Code, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WelcomePageProps {
   onStartChat: () => void;
+  onStartChatWithPrompt: (promptText: string) => void;
 }
 
-const WelcomePage: React.FC<WelcomePageProps> = ({ onStartChat }) => {
+const WelcomePage: React.FC<WelcomePageProps> = ({ onStartChat, onStartChatWithPrompt }) => {
   const suggestions = [
     {
       icon: <MessageSquare className="w-4 h-4" />,
       title: "Ask a question",
-      description: "Get help with any topic"
+      description: "Get help with any topic",
+      prompt: "What can you help me with today? I'm looking to learn something new."
     },
     {
       icon: <Code className="w-4 h-4" />,
       title: "Help with code",
-      description: "Debug or write code together"
+      description: "Debug or write code together",
+      prompt: "I need help with my code. Could you review this and suggest improvements?"
     },
     {
       icon: <Lightbulb className="w-4 h-4" />,
       title: "Brainstorm ideas",
-      description: "Generate creative solutions"
+      description: "Generate creative solutions",
+      prompt: "I'm looking for creative ideas. Can you help me brainstorm some innovative solutions?"
     },
     {
       icon: <Sparkles className="w-4 h-4" />,
       title: "Learn something new",
-      description: "Explore topics that interest you"
+      description: "Explore topics that interest you",
+      prompt: "I'd like to learn something new today. What interesting topics can you teach me about?"
     }
   ];
 
@@ -37,7 +41,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStartChat }) => {
         {/* Main heading with floating animation */}
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="relative">
-            <div className="w-20 h-20 mx-auto rounded-full overflow-hidden shadow-2xl ring-4 ring-white/20 hover:ring-white/40 transition-all duration-300 hover:scale-105 group">
+            <div className="w-20 h-20 mx-auto rounded-full overflow-hidden shadow-2xl ring-4 ring-white/20 hover:ring-white/40 transition-all duration-300 hover:scale-105 group animate-float">
               <img 
                 src="/lovable-uploads/752720fc-be8e-4106-95e8-b67a4b02a185.png" 
                 alt="Omolade AI Assistant" 
@@ -66,11 +70,11 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStartChat }) => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <button
-                onClick={onStartChat}
-                className="w-full p-6 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-300 group hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:-translate-y-1 hover:border-gray-300 dark:hover:border-gray-600"
+                onClick={() => onStartChatWithPrompt(suggestion.prompt)}
+                className="w-full p-6 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-300 group hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:-translate-y-1 hover:border-gray-300 dark:hover:border-gray-600 hover:scale-[1.02]"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:bg-gradient-to-br group-hover:from-blue-100 group-hover:to-purple-100 dark:group-hover:from-blue-900 dark:group-hover:to-purple-900">
                     {suggestion.icon}
                   </div>
                   <div className="flex-1">

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Bot, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -36,6 +37,7 @@ const Index = () => {
   const [webhookUrl, setWebhookUrl] = useState('http://192.168.101.3:5678/webhook/e52793bb-72ab-461f-8f46-404df08e6cc9');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load data from localStorage
   useEffect(() => {
@@ -127,6 +129,10 @@ const Index = () => {
     createNewSession();
   };
 
+  const handleStartChatWithPrompt = (promptText: string) => {
+    createNewSession(promptText);
+  };
+
   const getCurrentSession = () => {
     return sessions.find(session => session.id === currentSessionId);
   };
@@ -142,7 +148,7 @@ const Index = () => {
     return words.join(' ') + (firstMessage.split(' ').length > 6 ? '...' : '');
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, file?: File) => {
     if (!webhookUrl) {
       toast({
         title: "Configuration needed",
@@ -160,9 +166,18 @@ const Index = () => {
       
       // Wait for state to update before sending message
       setTimeout(() => {
-        sendMessage(text);
+        sendMessage(text, file);
       }, 100);
       return;
+    }
+
+    // Log file information if present
+    if (file) {
+      console.log('File selected for sending:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
     }
 
     const userMessage: Message = {
@@ -187,31 +202,58 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      console.log('Sending message to n8n webhook:', webhookUrl);
-      console.log('Request payload:', {
-        message: text,
-        timestamp: new Date().toISOString(),
-        user_id: 'household_user'
-      });
+      let requestBody: string | FormData;
+      let headers: HeadersInit = {};
+
+      if (file) {
+        // If file exists, use FormData
+        const formData = new FormData();
+        formData.append('message', text);
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('user_id', user?.id || 'unknown_user');
+        formData.append('file', file, file.name);
+        
+        requestBody = formData;
+        // Don't set Content-Type header - browser will set it automatically with boundary
+        console.log('Sending message with file to n8n webhook:', webhookUrl);
+        console.log('Request payload (FormData):', {
+          message: text,
+          timestamp: new Date().toISOString(),
+          user_id: user?.id || 'unknown_user',
+          file: {
+            name: file.name,
+            size: file.size,
+            type: file.type
+          }
+        });
+      } else {
+        // If no file, use JSON
+        const jsonPayload = {
+          message: text,
+          timestamp: new Date().toISOString(),
+          user_id: user?.id || 'unknown_user'
+        };
+        
+        requestBody = JSON.stringify(jsonPayload);
+        headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        console.log('Sending message to n8n webhook:', webhookUrl);
+        console.log('Request payload (JSON):', jsonPayload);
+      }
       
-      const params = new URLSearchParams({
-        message: text,
-        timestamp: new Date().toISOString(),
-        user_id: 'household_user'
-      });
-      
-      const response = await fetch(`${webhookUrl}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers,
+        body: requestBody
       });
 
       console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Error response body:', errorText);
+        console.error('Error response body:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
@@ -236,7 +278,7 @@ const Index = () => {
         console.log('Found AI response in message field:', aiResponseText);
       } else {
         aiResponseText = "I received your message but didn't get a response from the AI. Please check your n8n workflow configuration.";
-        console.log('No AI response found in any expected field. Full result:', result);
+        console.warn('No AI response found in any expected field. Full result:', result);
       }
       
       const aiMessage: Message = {
@@ -248,33 +290,16 @@ const Index = () => {
 
       updateCurrentSession(session => ({
         ...session,
-        lastMessage: aiResponseText.slice(0, 100),
+        lastMessage: aiResponseText,
         timestamp: new Date(),
         messageCount: session.messageCount + 1,
         messages: [...session.messages, aiMessage]
       }));
-      
     } catch (error) {
-      console.error('Error sending message to n8n:', error);
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: `Connection failed: ${error.message}. Please check that your n8n workflow is running and the webhook is configured for GET requests.`,
-        isUser: false,
-        timestamp: new Date()
-      };
-
-      updateCurrentSession(session => ({
-        ...session,
-        lastMessage: "Connection failed",
-        timestamp: new Date(),
-        messageCount: session.messageCount + 1,
-        messages: [...session.messages, errorMessage]
-      }));
-      
+      console.error('Error sending message:', error);
       toast({
-        title: "Connection error",
-        description: "Failed to connect to your n8n workflow. Check the console for details.",
+        title: "Error",
+        description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -347,7 +372,10 @@ const Index = () => {
                 </header>
 
                 {/* Welcome Page */}
-                <WelcomePage onStartChat={handleStartChat} />
+                <WelcomePage 
+                  onStartChat={handleStartChat} 
+                  onStartChatWithPrompt={handleStartChatWithPrompt}
+                />
               </>
             ) : (
               <>
